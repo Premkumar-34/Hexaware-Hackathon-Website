@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create/Edit Report</title>
+    <link rel="icon" type="image/x-icon" href="ByteMinds.ico">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #74ebd5, #9face6);
+            padding: 20px;
+        }
+        h1 {
+            color: #fff;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #fff;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create/Edit Report</h1>
+    <form id="reportForm">
+        <label for="reportName">Report Name:</label>
+        <input type="text" id="reportName" placeholder="Enter report name" required>
+        
+        <label for="dateRange">Date Range:</label>
+        <input type="text" id="dateRange" placeholder="Select date range" required>
+        
+        <label for="status">Application Status:</label>
+        <select id="status">
+            <option value="">Select status</option>
+            <option value="New">New</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Hired">Hired</option>
+            <option value="Rejected">Rejected</option>
+        </select>
+        <label for="createdBy">Created By:</label>
+        <input type="text" id="createdBy" placeholder="Enter creator's name" required>
+
+        
+        <label for="position">Position:</label>
+        <input type="text" id="position" placeholder="Enter Position" required>
+        
+
+        <label for="source">Source:</label>
+        <select id="source">
+            <option value="">Select source</option>
+            <option value="Job Board">Job Board</option>
+            <option value="Referral">Referral</option>
+        </select>
+
+        <label>Fields to Include:</label>
+        <div id="fieldsChecklist">
+            <label><input type="checkbox" value="Applicant Name"> Applicant Name</label>
+            <label><input type="checkbox" value="Date Applied"> Date Applied</label>
+            <label><input type="checkbox" value="Status"> Status</label>
+            <label><input type="checkbox" value="Source"> Source</label>
+        </div>
+
+        <button type="submit">Generate Report</button>
+    </form>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportId = urlParams.get('id');
+
+        window.onload = function() {
+            if (reportId) {
+                fetch(`http://localhost:8080/api/reports/${reportId}`)
+                    .then(response => response.json())
+                    .then(report => {
+                        document.getElementById('reportName').value = report.name;
+                        document.getElementById('dateRange').value = report.dateRange;
+                        document.getElementById('status').value = report.status;
+                        // Populate position and other fields as necessary
+                    });
+            }
+        };
+
+        document.getElementById('reportForm').onsubmit = function(e) {
+            e.preventDefault();
+            const reportData = {
+                name: document.getElementById('reportName').value,
+                dateRange: document.getElementById('dateRange').value,
+                status: document.getElementById('status').value,
+                position: document.getElementById('position').value,
+                source: document.getElementById('source').value,
+                fields: Array.from(document.querySelectorAll('#fieldsChecklist input:checked')).map(input => input.value),
+                createdBy: document.getElementById('createdBy').value
+            };
+
+            const method = reportId ? 'PUT' : 'POST';
+            const url = reportId ? `http://localhost:8080/api/reports/${reportId}` : 'http://localhost:8080/api/reports';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reportData),
+            })
+            .then(() => {
+                alert('Report saved successfully');
+                window.location.href = 'custom-report-dashboard.html';
+            })
+            .catch(error => console.error('Error saving report:', error));
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Job</title>
+    <link rel="icon" type="image/x-icon" href="ByteMinds.ico">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #74ebd5, #9face6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    
+        h1 {
+            text-align: center;
+            color: #fff;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+        }
+    
+        #applyForm {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+    
+        label {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 8px;
+        }
+    
+        input[type="file"], input[type="date"] {
+            padding: 10px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+    
+        input[type="file"]:hover, input[type="date"]:hover {
+            background-color: #e0e0e0;
+        }
+    
+        button {
+            background-color: #3498db;
+            color: #fff;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+    
+        button:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+    
+        button:focus {
+            outline: none;
+            box-shadow: 0px 0px 10px rgba(52, 152, 219, 0.5);
+        }
+    
+        #successMessage {
+            color: green;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            display: none;
+        }
+    
+        #errorMessage {
+            color: red;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            display: none;
+        }
+    
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    
+        form {
+            animation: fadeIn 0.7s ease-in-out;
+        }
+    
+        @media(max-width: 768px) {
+            #applyForm {
+                padding: 30px;
+            }
+    
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Apply for Job</h1>
+
+        <form id="applyForm" action="javascript:void(0);" enctype="multipart/form-data">
+            <input type="hidden" id="userId" name="userId">
+            <input type="hidden" id="jobId" name="jobId">
+
+            <label for="jobTitle">Job Title:</label>
+            <input type="text" id="jobTitle" name="jobTitle" readonly>
+
+            <label for="source">Source:</label>
+            <select id="source">
+                <option value="">Select source</option>
+                <option value="Job Board">Job Board</option>
+                <option value="Referral">Referral</option>
+                <option value="Social Media">Social Media</option>
+            </select>
+
+            <label for="dob">Date of Birth:</label>
+            <input type="date" id="dob" name="dob" required>
+
+            <label for="resume">Upload Resume (.pdf):</label>
+            <input type="file" id="resume" name="resume" accept=".pdf" required>
+
+            <button type="submit" id="submitButton">Submit Application</button>
+        </form>
+
+        <div id="successMessage" aria-live="polite">Application submitted successfully!</div>
+        <div id="errorMessage" aria-live="assertive">An error occurred while submitting your application.</div>
+    </div>
+
+    <script>
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+    
+        window.onload = function() {
+    const userId = getQueryParam('userId');
+    const jobId = getQueryParam('jobId');
+
+    if (!userId || !jobId) {
+        alert('Missing parameters. Please log in or apply through the correct job link.');
+        return;
+    }
+
+    document.getElementById('userId').value = userId;
+    document.getElementById('jobId').value = jobId;
+
+    // Log jobId for debugging
+    console.log('Fetching job for jobId:', jobId);
+
+    // Fetch the job title based on the jobId
+    fetch(`http://localhost:8080/api/jobs/${jobId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Job not found.');
+            }
+            return response.json();
+        })
+        .then(jobData => {
+            console.log('Job Data:', jobData); // Log the job data
+            console.log('Job Title:', jobData.jobTitle); // Log the job title correctly
+            document.getElementById('jobTitle').value = jobData.jobTitle || 'Title not available';
+        })
+        .catch(error => {
+            console.error('Error fetching job data:', error);
+            alert('Failed to load job title. Please try again later.');
+        });
+};
+
+    
+document.getElementById('applyForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const resume = document.getElementById('resume').files[0];
+    const submitButton = document.getElementById('submitButton');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+
+    submitButton.disabled = true;
+
+    if (!resume) {
+        alert('Please upload your resume.');
+        submitButton.disabled = false;
+        return;
+    }
+
+    const allowedExtensions = ['pdf'];
+    const fileExtension = resume.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+        alert('Invalid file type. Please upload a PDF document.');
+        submitButton.disabled = false;
+        return;
+    }
+
+    const userId = document.getElementById('userId').value;
+    const jobId = document.getElementById('jobId').value;
+    const dob = document.getElementById('dob').value;
+    const jobTitle = document.getElementById('jobTitle').value;
+    const source = document.getElementById('source').value;
+
+    // Set the current date as the applied date dynamically
+    const appliedDate = new Date().toISOString().split('T')[0];
+
+    const formData = new FormData();
+    formData.append('userId', userId);
+    formData.append('jobId', jobId);
+    formData.append('dob', dob);
+    formData.append('appliedDate', appliedDate); // Dynamically setting the current date
+    formData.append('resume', resume);
+    formData.append('jobTitle', jobTitle);
+    formData.append('source', source);
+    submitButton.textContent = "Submitting...";
+
+    fetch('http://localhost:8080/api/applications/apply', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || 'An error occurred. Please try again.');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Application submitted successfully:', data);
+        alert('Job Application submitted successfully!'); // Show immediate alert
+        window.location.href = 'candidate-dashboard.html'; // Redirect to dashboard
+    })
+    .catch(error => {
+        console.error('Error submitting application:', error);
+        errorMessage.textContent = error.message || 'An unexpected error occurred.';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit Application";
+    });
+});
+
+document.getElementById('applyForm').addEventListener('submit', function(event) {
+        event.preventDefault(); 
+        alert("Job Application Submitted Successfully...");
+        window.location.href = "candidate-dashboard.html";
+    });
+
+
+    </script>
+    
+</body>
+</html>

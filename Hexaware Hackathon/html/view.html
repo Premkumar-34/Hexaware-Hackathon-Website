@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Applications Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #008080;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        .date-filter {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .date-filter label, .date-filter input {
+            margin: 0 10px;
+            font-size: 1.1rem;
+        }
+
+        .date-filter button {
+            background-color: #008080;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .summary div {
+            background-color: #e0f7fa;
+            border: 1px solid #008080;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            width: 30%;
+            text-align: center;
+            font-size: 1.5rem;
+            color: #008080;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .summary div:hover {
+            transform: scale(1.03);
+            box-shadow: 0px 4px 15px rgba(0, 128, 128, 0.4);
+        }
+
+        .details {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            margin-top: 30px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let myChart; // Declare a variable to hold the chart instance
+
+        function loadApplicationStats(startDate, endDate) {
+            // Fetch application statistics with optional date range
+            let url = 'http://localhost:8080/api/applications/stats';
+            if (startDate && endDate) {
+                url += `?startDate=${startDate}&endDate=${endDate}`;
+            }
+
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data); // Check if rejectedApplications is present
+
+        document.getElementById("totalApplications").innerText = data.totalApplications;
+        document.getElementById("acceptedApplications").innerText = data.acceptedApplications;
+        document.getElementById("rejectedApplications").innerText = data.rejectedApplications;
+        document.getElementById("underReviewApplications").innerText = data.underReviewApplications;
+
+        renderChart(data.acceptedApplications, data.rejectedApplications, data.underReviewApplications);
+    })
+    .catch(error => console.error("Error fetching application stats:", error));
+
+        }
+
+        function applyDateFilter() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            if (startDate && endDate) {
+                loadApplicationStats(startDate, endDate);
+            } else {
+                alert("Please select both start and end dates.");
+            }
+        }
+
+        function renderChart(accepted, rejected, underReview) {
+    const ctx = document.getElementById('applicationsChart').getContext('2d');
+
+    // Destroy the existing chart instance if it exists
+    if (myChart) {
+        myChart.destroy();
+    }
+
+    // Create a new chart instance
+    myChart = new Chart(ctx, {
+        type: 'pie', // or your preferred chart type
+        data: {
+            labels: ['Accepted', 'rejected', 'Under Review'],
+            datasets: [{
+                label: 'Job Applications',
+                data: [accepted, rejected, underReview],
+                backgroundColor: ['#4caf50', '#f44336', '#ffeb3b'],  // Add color for rejected
+                borderColor: ['#357a38', '#ba000d', '#c8b900'],      // Add border color for rejected
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return tooltipItem.label + ': ' + tooltipItem.raw;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+        // Load the stats on page load with no date filter initially
+        window.onload = () => loadApplicationStats();
+    </script>
+</head>
+<body>
+    <h1>Job Applications Summary</h1>
+
+    <div class="date-filter">
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate">
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate">
+        <button onclick="applyDateFilter()">Apply Filter</button>
+    </div>
+
+    <div class="summary">
+        <div>
+            <h3>Total Applications</h3>
+            <p id="totalApplications">0</p>
+        </div>
+        <div>
+            <h3>Accepted Applications</h3>
+            <p id="acceptedApplications">0</p>
+        </div>
+        <div>
+            <h3>Rejected Applications</h3>
+            <p id="rejectedApplications">0</p>
+        </div>
+        <div>
+            <h3>Under Review Application</h3>
+            <p id="underReviewApplications">0</p>
+        </div>
+    </div>
+
+    <div class="details"></div>
+
+    <canvas id="applicationsChart" width="400" height="400"></canvas>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Reports Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="ByteMinds.ico">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #74ebd5, #9face6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            max-width: 600px;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        .button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Custom Reports</h1>
+    <button onclick="window.location.href='edit-report.html'">Create New Report</button>
+    <table id="reportsTable">
+        <thead>
+            <tr>
+                <th>Report Name</th>
+                <th>Date Created</th>
+                <th>Created By</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be populated here -->
+        </tbody>
+    </table>
+
+    <script>
+        window.onload = function() {
+            fetchReports();
+        };
+
+        function fetchReports() {
+            fetch('http://localhost:8080/api/reports')
+                .then(response => response.json())
+                .then(reports => {
+                    const tableBody = document.getElementById('reportsTable').querySelector('tbody');
+                    reports.forEach(report => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${report.name}</td>
+                            <td>${report.dateCreated}</td>
+                            <td>${report.createdBy}</td>
+                            <td>
+                                <button onclick="viewReport('${report.id}')">View</button>
+                                <button onclick="editReport('${report.id}')">Edit</button>
+                                <button onclick="deleteReport('${report.id}')">Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching reports:', error));
+        }
+
+        function viewReport(id) {
+            window.location.href = `report-details.html?id=${id}`;
+        }
+
+        function editReport(id) {
+            window.location.href = `edit-report.html?id=${id}`;
+        }
+
+        function deleteReport(id) {
+            fetch(`http://localhost:8080/api/reports/${id}`, { method: 'DELETE' })
+                .then(() => {
+                    alert('Report deleted successfully');
+                    fetchReports();
+                })
+                .catch(error => console.error('Error deleting report:', error));
+        }
+    </script>
+</body>
+</html>

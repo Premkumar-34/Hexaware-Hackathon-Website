@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applied Candidates</title>
+    <link rel="icon" type="image/x-icon" href="ByteMinds.ico">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #008080;
+            font-size: 3rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 5px #aaa;
+        }
+
+        #results {
+            margin-top: 20px;
+            padding: 10px;
+        }
+
+        #results div {
+            background-color: #e0f7fa;
+            border: 1px solid #008080;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #results div:hover {
+            transform: scale(1.03);
+            box-shadow: 0px 4px 15px rgba(0, 128, 128, 0.4);
+        }
+
+        h3 {
+            color: #008080;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .resume {
+            color: #ff5722;
+            font-weight: bold;
+        }
+
+        .actions {
+            margin-top: 15px;
+        }
+
+        .actions button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .accept {
+            background-color: #4caf50;
+        }
+
+        .reject {
+            background-color: #f44336;
+        }
+
+        .accept:hover, .reject:hover {
+            opacity: 0.9;
+        }
+
+        /* Date picker */
+        #calendarModal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 100px;
+        }
+
+        #calendarModalContent {
+            margin: auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+        }
+
+        input[type="date"] {
+            padding: 10px;
+            margin: 10px 0;
+            width: 80%;
+        }
+
+        .close {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .submit {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        /* Loading message */
+        #loadingMessage {
+            display: none;
+            margin-top: 10px;
+            color: #4caf50;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        let selectedApplicationId = null;
+
+        function loadCandidates() {
+            fetch('http://localhost:8080/api/applications/all')
+                .then(response => response.json())
+                .then(data => {
+                    let resultDiv = document.getElementById("results");
+                    resultDiv.innerHTML = "";
+                    if (data.length === 0) {
+                        resultDiv.innerHTML = "<p>No candidates have applied for jobs yet.</p>";
+                    } else {
+                        data.forEach(application => {
+                            let candidateDiv = document.createElement("div");
+                            candidateDiv.innerHTML = `
+                                <h3>Job Title: ${application.jobTitle}</h3>
+                                <p>Email: ${application.userEmail}</p>
+                                <p>Phone: ${application.userMobileNumber}</p>
+                                <p>AI Score: ${application.aiScore ? application.aiScore : 'Not Available'}</p>
+                                <p>Resume: <a href="http://localhost:8080/api/applications/${application.applicationId}/resume" target="_blank" class="resume">${application.resumeFileName}</a></p>
+                                <div class="actions" id="actions-${application.applicationId}">
+                                    <button class="accept" onclick="openCalendarModal(${application.applicationId})">Accept</button>
+                                    <button class="reject" onclick="handleReject(${application.applicationId})">Reject</button>
+                                </div>
+                                <hr>
+                            `;
+                            resultDiv.appendChild(candidateDiv);
+                        });
+                    }
+                })
+                .catch(error => console.error("Error fetching job applications:", error));
+        }
+
+        function openCalendarModal(applicationId) {
+            selectedApplicationId = applicationId; // Save the application ID for the action
+            document.getElementById("calendarModal").style.display = "block"; // Show the modal
+        }
+
+        function closeCalendarModal() {
+            document.getElementById("calendarModal").style.display = "none"; // Hide the modal
+        }
+
+        function submitDate() {
+            const interviewDate = document.getElementById("interviewDate").value;
+            if (interviewDate) {
+                handleAccept(selectedApplicationId, interviewDate); // Call accept function with date
+            } else {
+                alert("Please select an interview date.");
+            }
+        }
+
+        function handleAccept(applicationId, interviewDate) {
+            const apiUrl = `http://localhost:8080/api/applications/${applicationId}/accept`;
+            const loadingMessage = document.getElementById("loadingMessage");
+            const submitButton = document.querySelector("#calendarModal .submit");
+
+            loadingMessage.style.display = "block"; // Show loading message
+            submitButton.disabled = true; // Disable submit button
+
+            // Send the request to accept the candidate with the interview date
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ interviewDate }) // Send the interview date
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Update the UI: remove buttons and show 'Accepted'
+                    document.getElementById(`actions-${applicationId}`).innerHTML = "<p style='color: green;'>Accepted</p>";
+                    alert('Application accepted and interview date set.');
+                    closeCalendarModal(); // Close the modal after success
+                } else {
+                    alert('Failed to accept the application. Please try again.');
+                }
+            })
+            .catch(error => console.error('Error accepting application:', error))
+            .finally(() => {
+                loadingMessage.style.display = "none"; // Hide loading message
+                submitButton.disabled = false; // Re-enable submit button
+            });
+        }
+
+        function handleReject(applicationId) {
+            const apiUrl = `http://localhost:8080/api/applications/${applicationId}/reject`;
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers:{
+                    'Content-Type' : 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Update the UI: remove buttons and show 'Rejected'
+                    document.getElementById(`actions-${applicationId}`).innerHTML = "<p style='color: red;'>Rejected</p>";
+                    alert('Application rejected.');
+                } else {
+                    alert('Failed to reject the application. Please try again.');
+                }
+            })
+            .catch(error => console.error('Error rejecting application:', error));
+        }
+
+        window.onload = loadCandidates;
+    </script>
+</head>
+<body>
+    <h1>Applied Candidates</h1>
+    <div id="results"></div>
+
+    <!-- Calendar Modal -->
+    <div id="calendarModal">
+        <div id="calendarModalContent">
+            <h3>Select Interview Date</h3>
+            <input type="date" id="interviewDate">
+            <br>
+            <button class="submit" onclick="submitDate()">Submit</button>
+            <button class="close" onclick="closeCalendarModal()">Close</button>
+            <div id="loadingMessage">Submitting...</div> <!-- Loading message -->
+        </div>
+    </div>
+</body>
+</html>

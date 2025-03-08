@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Details</title>
+    <link rel="icon" type="image/x-icon" href="ByteMinds.ico">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #74ebd5, #9face6);
+            padding: 20px;
+        }
+        h1 {
+            color: #fff;
+        }
+        .button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            max-width: 600px;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Report Details</h1>
+    <div id="reportInfo">
+        <p><strong>Report Name:</strong> <span id="reportName"></span></p>
+        <p><strong>Date Created:</strong> <span id="dateCreated"></span></p>
+        <p><strong>Created By:</strong> <span id="createdBy"></span></p>
+    </div>
+    <h2>Report Data</h2>
+    <table id="reportDataTable">
+        <thead>
+            <tr>
+                <!-- Dynamic columns based on selected fields -->
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dynamic rows based on selected criteria -->
+        </tbody>
+    </table>
+    <button onclick="editReport()">Edit Report</button>
+    <button onclick="deleteReport()">Delete Report</button>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportId = urlParams.get('id');
+
+        window.onload = function() {
+            fetch(`http://localhost:8080/api/reports/${reportId}`)
+                .then(response => response.json())
+                .then(report => {
+                    document.getElementById('reportName').innerText = report.name;
+                    document.getElementById('dateCreated').innerText = report.dateCreated;
+                    document.getElementById('createdBy').innerText = report.createdBy;
+                    // Populate report data table
+                });
+        };
+
+        function editReport() {
+            window.location.href = `edit-report.html?id=${reportId}`;
+        }
+
+        function deleteReport() {
+            fetch(`http://localhost:8080/api/reports/${reportId}`, { method: 'DELETE' })
+                .then(() => {
+                    alert('Report deleted successfully');
+                    window.location.href = 'index.html';
+                })
+                .catch(error => console.error('Error deleting report:', error));
+        }
+    </script>
+</body>
+</html>
