@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy the Maven wrapper files and source code
 COPY . .
 
+# Give execute permission to the Maven wrapper
+RUN chmod +x mvnw
+
 # Build the application
 RUN ./mvnw clean package
 
